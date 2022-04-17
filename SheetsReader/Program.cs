@@ -17,17 +17,17 @@ namespace SheetsReader
     {
         public static UserCredential Credential;
         public static IList<Sheet> Sheets= new List<Sheet>();
-        public static string spreadsheetId = "1ztAJIxFfmCr3QllANpp-UwxPnV4mMceW1tt_UXOAuOk";
+        public static string spreadsheetId;
         public static void Main(string[] args)
         {
             Credential = GetNewCredential();
+            spreadsheetId = Console.ReadLine();
             GetAllSheets();
             if (!Directory.Exists("Output"))
             {
                 Directory.CreateDirectory("Output");
             }
-            DownloadAllSheetsAsCsv();
-            
+            ExportAllGidToJson();
         }
 
         public static void GetAllSheets()
@@ -74,6 +74,36 @@ namespace SheetsReader
                 Downloader dTmp = new Downloader("https://docs.google.com/spreadsheets/d/"+spreadsheetId+"/export?format=csv&gid=" + sTmp.Properties.SheetId,  Directory.GetCurrentDirectory()+@"\Output\" + sTmp.Properties.Title+".csv");
                 dTmp.StartDownload();
             }
+        }
+
+        
+        public static void ExportAllGidToJson()
+        {
+            
+            List<GidWithName> allGid = new List<GidWithName>();
+            foreach (Sheet sTmp in Sheets)
+            {
+                allGid.Add(new GidWithName(sTmp.Properties.Title,sTmp.Properties.SheetId.Value.ToString()));
+            }
+            File.WriteAllText(@"Output/gidList.json",JsonConvert.SerializeObject(allGid));
+        }
+        
+        
+        public struct GidWithName
+        {
+            public string name, gid;
+
+            public GidWithName(string name, string gid)
+            {
+                this.name = name;
+                this.gid = gid;
+            }
+        }
+        public static List<GidWithName> ReadGidList(string path)
+        {
+            StreamReader reader = new StreamReader(path);
+            string allText = reader.ReadToEnd();
+            return JsonConvert.DeserializeObject<List<GidWithName>>(allText);
         }
         
         public class Downloader
